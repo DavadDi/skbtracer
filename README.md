@@ -10,6 +10,8 @@ skbtracer on  ebpf (required Linux Kernel 4.15+)
 本文代码来自于 [gist](https://gist.github.com/chendotjs/194768c411f15ecfec11e7235c435fa0
 )
 
+更通用的网络方案参见仓库 [WeaveWorks tcptracer-bpf](https://github.com/weaveworks/tcptracer-bpf)
+
 相关文档参见这里 
 * [使用 ebpf 深入分析容器网络 dup 包问题](https://blog.csdn.net/alex_yangchuansheng/article/details/104058072)
 * [使用 Linux tracepoint、perf 和 eBPF 跟踪数据包 (2017)](https://github.com/DavadDi/bpf_study/blob/master/trace-packet-with-tracepoint-perf-ebpf/index_zh.md)
