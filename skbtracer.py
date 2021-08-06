@@ -162,7 +162,7 @@ class TestEvt(ct.Structure):
     _fields_ = [
         ("func_name",   ct.c_char * FUNCNAME_MAX_LEN),
         ("flags",       ct.c_ubyte),
-
+        ("cpu",       ct.c_ubyte),
         ("ifname",      ct.c_char * IFNAMSIZ),
         ("netns",       ct.c_uint),
 
@@ -170,6 +170,7 @@ class TestEvt(ct.Structure):
         ("len",         ct.c_uint),
         ("ip_version",  ct.c_ubyte),
         ("l4_proto",    ct.c_ubyte),
+        ("tot_len",     ct.c_ushort),
         ("saddr",       ct.c_ulonglong * 2),
         ("daddr",       ct.c_ulonglong * 2),
         ("icmptype",    ct.c_ubyte),
@@ -178,7 +179,6 @@ class TestEvt(ct.Structure):
         ("sport",       ct.c_ushort),
         ("dport",       ct.c_ushort),
         ("tcpflags",    ct.c_ushort),
-
         ("hook",        ct.c_uint),
         ("pf",          ct.c_ubyte),
         ("verdict",     ct.c_uint),
@@ -242,6 +242,13 @@ def time_str(event):
         return "%-7s " % time.strftime("%H:%M:%S")
 
 def event_printer(cpu, data, size):
+    args.catch_count = args.catch_count - 1
+
+    if args.catch_count < 0:
+        global is_done
+        is_done = True
+        return
+
     # Decode event
     event = ct.cast(data, ct.POINTER(TestEvt)).contents
 
@@ -279,20 +286,19 @@ def event_printer(cpu, data, size):
     trace_info = "%x.%u:%s%s" % (event.skb, event.pkt_type, iptables, event.func_name)
 
     # Print event
-    print("[%-8s][%-10s] %-12s %-12s %-40s %s" % (time_str(event), event.netns, event.ifname, mac_info, pkt_info, trace_info))
+    print("[%-8s][%-10s] %-6s %-18s %-12s %-6s %-40s %s" % (time_str(event), event.netns, event.cpu, event.ifname, mac_info, event.tot_len, pkt_info, trace_info))
     print_stack(event)
-    args.catch_count = args.catch_count - 1
-    if args.catch_count <= 0:
-        sys.exit(0)
+
+is_done = False
 
 if __name__ == "__main__":
     b = BPF(text=bpf_text)
     b["route_event"].open_perf_buffer(event_printer)
 
-    print("%-10s %-12s %-12s %-12s %-40s %s" % ('time', 'NETWORK_NS', 'INTERFACE', 'DEST_MAC', 'PKT_INFO', 'TRACE_INFO'))
+    print("%-10s %-12s %-6s %-18s %-12s %-6s %-40s %s" % ('time', 'NETWORK_NS', 'CPU', 'INTERFACE', 'DEST_MAC', 'IP_LEN', 'PKT_INFO', 'TRACE_INFO'))
 
     try:
-        while True:
-            b.kprobe_poll(10)
+        while is_done == False:
+            b.kprobe_poll(1)
     except KeyboardInterrupt:
-        sys.exit(0)
+        print("Cancel by User Ctrl+C\n")
