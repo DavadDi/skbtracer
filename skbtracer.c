@@ -1,3 +1,5 @@
+#define KBUILD_MODNAME "skbtracer"
+
 #include <bcc/proto.h>
 #include <uapi/linux/ip.h>
 #include <uapi/linux/ipv6.h>
@@ -671,7 +673,7 @@ int kprobe____kfree_skb(struct pt_regs *ctx, struct sk_buff *skb)
     event.start_ns = bpf_ktime_get_ns();
     bpf_strncpy(event.func_name, __func__+8, FUNCNAME_MAX_LEN);
     get_stack(ctx, &event);
-    route_event.perf_submit(ctx, event, sizeof(*event));
+    route_event.perf_submit(ctx, &event, sizeof(event));
     return 0;
 }
 #endif
